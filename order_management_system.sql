@@ -177,6 +177,35 @@ FOREIGN KEY (product_id) REFERENCES product(product_id));
 
 desc order_details;
 
+-- stored procedure
+CREATE  PROCEDURE `add_order_detail`(in_pid varchar(100),in_qty int,in_del_date datetime,in_order_id varchar(20))
+BEGIN
+	#declarations
+    declare v_del int;
+    declare price decimal;
+    declare p_query decimal;
+    declare p_name varchar(100);
+    
+    
+    
+    #product price
+    set p_query = (select product_details.price from product_details  where product_details.product_id=in_pid);
+    set price = in_qty * p_query;
+    
+    #getting product name
+    set p_name = (select product.product_name from product  where product.product_id=in_pid);
+    
+    
+    
+    #random nuber for delivery number
+     set v_del = floor(rand()*4506);
+    
+      #add record to table 
+     insert into order_details values(in_pid,p_name,price,in_qty,in_del_date,
+                                 v_del,in_order_id);
+
+END
+
 
 -- Created a stored procedure to insert data
 
@@ -208,6 +237,47 @@ FOREIGN KEY (order_id) REFERENCES order_details(order_id));
  
 
 desc orders;
+
+-- stored procedure
+
+CREATE PROCEDURE `add_order_info`(in_order_id varchar(100),o_date datetime,cust_id int ,agent_id int)
+BEGIN
+
+   declare pname varchar(100);
+   declare o_amt varchar(100);
+   declare p_dis decimal;
+   declare p_query decimal;
+   declare del varchar(40);
+   declare o_status varchar(30);
+   declare deli_date datetime;
+  
+    #getting product name
+    set pname = (select p_name from order_details where order_id=in_order_id);
+
+    
+        
+	#getting order amount
+    set p_query = (select prod_price from order_details  where order_id=in_order_id);
+    set p_dis = (select discount from  product_details as t1 join  order_details as t2
+                  on t1.product_id = t2.product_id where order_id=in_order_id);
+    set o_amt = p_query- p_dis;
+    
+     # order status
+        set deli_date = (select delivery_date from order_details where order_details.order_id = in_order_id);
+		if (day(deli_date) - day(o_date))<2
+          then
+			set o_status = 'One day Delivery';
+            set o_amt = o_amt +120; #delivery charge
+		elseif (day(deli_date) - day(o_date))>=2 then
+			set o_status = 'Normal Delivery';
+		end if;
+        
+        
+    #add record to table 
+     insert into orders values(in_order_id,pname,o_amt,o_date,o_status,
+                                 cust_id,agent_id);
+ 
+END
 
 -- inserting values using stored procedure
 
